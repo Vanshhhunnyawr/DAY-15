@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 15 - For Rubaani 💛</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            /* Deeper, warmer yellowish pastel gradient */
+            background: linear-gradient(135deg, #fffde7 0%, #ffecb3 100%);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Floating Background Elements --- */
+        .floating-bg {
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .element {
+            position: absolute;
+            font-size: 2.5rem;
+            opacity: 0.4;
+            filter: drop-shadow(0 4px 8px rgba(255, 182, 193, 0.3));
+            animation: float 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(-10deg) scale(1); }
+            100% { transform: translateY(-40px) rotate(10deg) scale(1.15); }
+        }
+
+        /* --- Canvas for the Drawing Animation --- */
+        #heartCanvas {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- Her Picture Container --- */
+        #reveal-container {
+            position: absolute;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            top: 50%;
+            left: 50%;
+            /* Tuned perfectly to the center of the math equation */
+            transform: translate(-50%, -50%) translateY(-15px); 
+            opacity: 0;
+            transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy pop-up */
+            pointer-events: none;
+            /* Added a glowing aura behind the picture */
+            filter: drop-shadow(0 0 20px rgba(255, 182, 193, 0.8));
+        }
+
+        #reveal-container.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) translateY(-15px) scale(1);
+        }
+
+        #reveal-container.hidden-state {
+            transform: translate(-50%, -50%) translateY(-15px) scale(0.3);
+        }
+
+        /* Perfected heart shape to match the Python math curve */
+        .heart-pic {
+            width: 240px;  /* Resized to fit perfectly inside the scale=11 text ring */
+            height: 220px;
+            object-fit: cover;
+            clip-path: path('M120,210 C120,210 10,140 10,75 C10,35 45,10 80,10 C105,10 120,30 120,30 C120,30 135,10 160,10 C195,10 230,35 230,75 C230,140 120,210 120,210 Z');
+            transition: transform 0.3s ease;
+        }
+
+        .heart-pic:hover {
+            transform: scale(1.05);
+        }
+
+        /* Start Button overlay */
+        #startOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(255, 253, 231, 0.85);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.6s ease;
+        }
+        .start-btn {
+            padding: 16px 45px;
+            border: none;
+            border-radius: 40px;
+            background: linear-gradient(135deg, #ffb6c1, #ff9eaa);
+            color: white;
+            font-size: 1.3rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(255, 182, 193, 0.5);
+            transition: all 0.3s ease;
+        }
+        .start-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(255, 182, 193, 0.7);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="startOverlay">
+        <button class="start-btn" id="startBtn">Open Day 15 💛</button>
+    </div>
+
+    <!-- Floating Background Elements -->
+    <div class="floating-bg">
+        <div class="element" style="top: 10%; left: 15%; animation-delay: 0s;">🧸</div>
+        <div class="element" style="top: 25%; right: 10%; animation-delay: 1.2s;">✨</div>
+        <div class="element" style="bottom: 20%; left: 10%; animation-delay: 2.5s;">💖</div>
+        <div class="element" style="bottom: 15%; right: 15%; animation-delay: 0.8s;">🌟</div>
+        <div class="element" style="top: 50%; left: 5%; animation-delay: 1.5s;">🧸</div>
+        <div class="element" style="top: 60%; right: 8%; animation-delay: 3s;">💛</div>
+    </div>
+
+    <!-- The Her Picture Pop-Up Reveal -->
+    <div id="reveal-container" class="hidden-state">
+        <img src="Rubaani.jpg" alt="Rubaani" class="heart-pic" onerror="this.src='https://placehold.co/250x250/ffb6c1/ffffff?text=Rubaani'">
+    </div>
+
+    <!-- Canvas where the text heart is drawn -->
+    <canvas id="heartCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+        const startOverlay = document.getElementById('startOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const revealContainer = document.getElementById('reveal-container');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let scale = 11;
+        const maxScale = 17;
+        let i = 0;
+        const maxI = 120;
+        let heartComplete = false;
+        let animationId;
+
+        function drawHeartText() {
+            if (scale > maxScale) {
+                cancelAnimationFrame(animationId);
+                return; 
+            }
+
+            const angle = i * (Math.PI * 2) / 120;
+            
+            const xBase = 16 * Math.pow(Math.sin(angle), 3);
+            const yBase = - (13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle));
+
+            // Perfectly sizing the text frame
+            const webScaleMultiplier = window.innerWidth < 600 ? 7 : 12; 
+            const x = xBase * scale * (webScaleMultiplier / 11);
+            const y = yBase * scale * (webScaleMultiplier / 11);
+
+            // Adding the text shadow to make it 100x better
+            ctx.shadowColor = "rgba(255, 140, 160, 0.7)"; // Soft glowing pink shadow
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+
+            ctx.fillStyle = "#ffb6c1"; 
+            ctx.font = "bold 9px 'Poppins', Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("I love you", x, y);
+
+            i++;
+
+            if (i >= maxI) {
+                i = 0;
+                scale++;
+                
+                if (!heartComplete) {
+                    heartComplete = true;
+                    revealContainer.classList.remove('hidden-state');
+                    revealContainer.classList.add('show');
+                }
+            }
+
+            setTimeout(() => {
+                animationId = requestAnimationFrame(drawHeartText);
+            }, 8); // Slightly faster, smoother drawing
+        }
+
+        startBtn.addEventListener('click', () => {
+            startOverlay.style.opacity = '0';
+            setTimeout(() => {
+                startOverlay.style.display = 'none';
+                drawHeartText(); 
+            }, 600);
+        });
+    </script>
+</body>
+</html>
